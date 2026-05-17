@@ -3,10 +3,10 @@ set shell := ["bash", "-cu"]
 # 対象プロジェクト。`just PROJECT=projects/02_xxx get` のように上書き可能
 export PROJECT := env_var_or_default("PROJECT", "projects/01_counter_freezed")
 
-mod gen
-mod build
-mod upgrade
-mod init
+mod gen 'just/gen.just'
+mod build 'just/build.just'
+mod upgrade 'just/upgrade.just'
+mod init 'just/init.just'
 
 # レシピの 1 文字エイリアス
 alias g := get
