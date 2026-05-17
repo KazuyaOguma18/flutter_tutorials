@@ -1,0 +1,182 @@
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.list.outputs.projects }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: list
+        name: Discover Flutter projects
+        run: |
+          projects=$(find projects -mindepth 2 -maxdepth 2 -name pubspec.yaml -printf '%h\n' \
+            | sort \
+            | jq -R . \
+            | jq -sc .)
+          echo "projects=$projects" >> "$GITHUB_OUTPUT"
+          echo "Discovered: $projects"
+
+  build:
+    needs: discover
+    if: needs.discover.outputs.projects != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJson(needs.discover.outputs.projects) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Compute project name
+        id: meta
+        run: echo "name=$(basename '${{ matrix.project }}')" >> "$GITHUB_OUTPUT"
+
+      - name: flutter pub get
+        working-directory: ${{ matrix.project }}
+        run: flutter pub get
+
+      - name: build_runner (Freezed / json_serializable)
+        working-directory: ${{ matrix.project }}
+        run: |
+          if grep -qE '^[[:space:]]*build_runner:' pubspec.yaml; then
+            dart run build_runner build --delete-conflicting-outputs
+          else
+            echo "build_runner not declared — skip"
+          fi
+
+      - name: flutter build web
+        working-directory: ${{ matrix.project }}
+        env:
+          BASE_HREF: /${{ github.event.repository.name }}/${{ steps.meta.outputs.name }}/
+        run: flutter build web --base-href "$BASE_HREF"
+
+      - name: Upload web build
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-${{ steps.meta.outputs.name }}
+          path: ${{ matrix.project }}/build/web
+          if-no-files-found: error
+          retention-days: 7
+
+  aggregate:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all web builds
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: web-*
+
+      - name: Assemble public/
+        run: |
+          mkdir -p public
+          for dir in artifacts/web-*; do
+            [ -d "$dir" ] || continue
+            name=${dir#artifacts/web-}
+            mkdir -p "public/$name"
+            cp -a "$dir/." "public/$name/"
+          done
+
+      - name: Generate index.html
+        run: |
+          repo="${{ github.event.repository.name }}"
+          {
+            cat <<'EOF'
+          <!doctype html>
+          <html lang="ja">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width,initial-scale=1">
+            <title>Flutter Tutorials</title>
+            <style>
+              body { font-family: system-ui, -apple-system, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; color: #222; }
+              h1 { border-bottom: 1px solid #ddd; padding-bottom: .3rem; }
+              ul { padding-left: 1.2rem; }
+              li { margin: .5rem 0; }
+              a { color: #0366d6; text-decoration: none; }
+              a:hover { text-decoration: underline; }
+              .desc { color: #666; font-size: .9rem; }
+              footer { margin-top: 3rem; color: #888; font-size: .85rem; }
+            </style>
+          </head>
+          <body>
+            <h1>Flutter Tutorials</h1>
+            <p>各チュートリアルの Flutter web ビルドを公開しています。</p>
+            <ul>
+          EOF
+
+            for dir in public/*/; do
+              [ -d "$dir" ] || continue
+              name=$(basename "$dir")
+              [ "$name" = "." ] && continue
+              src="projects/$name/pubspec.yaml"
+              desc=""
+              if [ -f "$src" ]; then
+                desc=$(awk '/^description:/ {
+                  sub(/^description:[[:space:]]*/, "", $0)
+                  sub(/^["'\'']/, "", $0)
+                  sub(/["'\'']$/, "", $0)
+                  print
+                  exit
+                }' "$src" \
+                  | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g')
+              fi
+              if [ -n "$desc" ]; then
+                printf '    <li><a href="%s/">%s</a> <span class="desc">— %s</span></li>\n' "$name" "$name" "$desc"
+              else
+                printf '    <li><a href="%s/">%s</a></li>\n' "$name" "$name"
+              fi
+            done
+
+            cat <<EOF
+            </ul>
+            <footer>
+              <a href="https://github.com/${{ github.repository }}">${{ github.repository }}</a>
+              / commit <code>${GITHUB_SHA::7}</code>
+            </footer>
+          </body>
+          </html>
+          EOF
+          } > public/index.html
+          echo "--- index.html ---"
+          cat public/index.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: aggregate
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
