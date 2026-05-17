@@ -16,3 +16,6 @@
 .idea/
 .vscode/
 *.iml
+
+# just project が書き出すアクティブプロジェクトの状態
+.active-project

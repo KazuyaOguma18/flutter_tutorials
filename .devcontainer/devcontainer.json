@@ -12,7 +12,7 @@
   "remoteEnv": {
     "CHROME_EXECUTABLE": "/usr/bin/chromium"
   },
-  "postCreateCommand": "test -f pubspec.yaml && flutter pub get || true",
+  "postCreateCommand": ".devcontainer/postCreateCommand.sh",
   "customizations": {
     "vscode": {
       "extensions": [

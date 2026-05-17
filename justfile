@@ -1,12 +1,14 @@
 set shell := ["bash", "-cu"]
 
-# 対象プロジェクト。`just PROJECT=projects/02_xxx get` のように上書き可能
-export PROJECT := env_var_or_default("PROJECT", "projects/01_counter_freezed")
+# 対象プロジェクト。優先順: PROJECT env > .active-project ファイル > デフォルト
+# 切替は `just project set <name>`、確認は `just project [get]`
+export PROJECT := env_var_or_default("PROJECT", `cat .active-project 2>/dev/null || echo projects/01_counter_freezed`)
 
 mod gen 'just/gen.just'
 mod build 'just/build.just'
 mod upgrade 'just/upgrade.just'
 mod init 'just/init.just'
+mod project 'just/project.just'
 
 # レシピの 1 文字エイリアス
 alias g := get

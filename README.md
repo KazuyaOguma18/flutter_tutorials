@@ -26,25 +26,44 @@ Flutter プロジェクトとして並べていく。devcontainer で環境を�
 ```
 .
 ├── .devcontainer/            # コンテナ定義
-├── justfile                  # 入口。PROJECT 変数で対象を切替
+├── justfile                  # 入口。PROJECT で対象を切替
 ├── gen.just                  # build_runner 系 (Freezed 等)
 ├── build.just                # flutter build *
 ├── upgrade.just              # pub upgrade 系
 ├── init.just                 # flutter create (足場生成)
-└── projects/
-    └── 01_counter_freezed/   # サンプル: Freezed + Counter
-        ├── pubspec.yaml
-        └── lib/
+├── project.just              # アクティブプロジェクトの確認/切替
+└── projects/                # 各チュートリアルを配下に独立した Flutter プロジェクトとして並べる
 ```
 
 各チュートリアルは `projects/<番号>_<名前>/` に独立した Flutter プロジェクト
 として置く。`pubspec.yaml` はプロジェクトごとに持つ。
 
+## アクティブプロジェクトの切替
+
+複数プロジェクトを扱うため、コマンドの対象を `just project` で切り替える。
+
+```bash
+just project              # 現在アクティブなプロジェクトを表示 (get と同じ)
+just project get          # 同上
+just project set 02_my_sample   # projects/02_my_sample に切替
+```
+
+切替結果は `.active-project` ファイル (.gitignore 済) に書かれ、以降の
+`just get` / `just run` などはそのプロジェクトに対して実行される。
+
+優先順は **`PROJECT` env > `.active-project` > デフォルト (`projects/01_counter_freezed`)**。
+一時的に別プロジェクトを叩きたいときは `PROJECT=projects/foo just run` のように
+env で上書きする。
+
+devcontainer の bash では `projects/<name>/` 配下に `cd` すると、そのターミナル
+セッションでのみ `PROJECT` が自動的に export される ([.devcontainer/autoset.sh](.devcontainer/autoset.sh))。
+配下から抜けると unset され、`.active-project` / デフォルトのフォールバックに戻る。
+
 ## 新しいプロジェクトを作る
 
 ```bash
-# 1. ディレクトリを決めて環境変数で指定
-export PROJECT=projects/02_my_sample
+# 1. アクティブにするプロジェクトを切替
+just project set 02_my_sample
 
 # 2. 足場を生成 (web + linux)
 just init platforms
@@ -56,9 +75,6 @@ just init platforms
 just get
 just run
 ```
-
-`PROJECT` を export しない場合は毎回 `just PROJECT=... <task>` で指定する。
-デフォルトは `projects/01_counter_freezed`。
 
 ## 開発の流れ
 
