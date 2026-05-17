@@ -6,7 +6,6 @@ export PROJECT := env_var_or_default("PROJECT", `cat .active-project 2>/dev/null
 
 mod gen 'just/gen.just'
 mod build 'just/build.just'
-mod upgrade 'just/upgrade.just'
 mod init 'just/init.just'
 mod project 'just/project.just'
 

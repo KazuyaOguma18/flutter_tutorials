@@ -29,7 +29,6 @@ Flutter プロジェクトとして並べていく。devcontainer で環境を�
 ├── justfile                  # 入口。PROJECT で対象を切替
 ├── gen.just                  # build_runner 系 (Freezed 等)
 ├── build.just                # flutter build *
-├── upgrade.just              # pub upgrade 系
 ├── init.just                 # flutter create (足場生成)
 ├── project.just              # アクティブプロジェクトの確認/切替
 └── projects/                # 各チュートリアルを配下に独立した Flutter プロジェクトとして並べる
@@ -106,13 +105,6 @@ just test              # flutter test
 ```bash
 just build web         # build/web/ に出力
 just build linux       # build/linux/ に出力
-```
-
-### 依存更新
-
-```bash
-just upgrade minor     # 許容範囲内で更新
-just upgrade major     # メジャー含む更新 (pubspec.yaml も書き換わる)
 ```
 
 ## 作法メモ
