@@ -1,0 +1,25 @@
+{
+  "name": "Flutter Tutorials",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {},
+    "ghcr.io/guiyomh/features/just:0": {}
+  },
+  "remoteUser": "vscode",
+  "remoteEnv": {
+    "CHROME_EXECUTABLE": "/usr/bin/chromium"
+  },
+  "postCreateCommand": "test -f pubspec.yaml && flutter pub get || true",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Dart-Code.dart-code",
+        "Dart-Code.flutter",
+        "skellock.just"
+      ]
+    }
+  }
+}
