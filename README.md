@@ -50,7 +50,7 @@ just project set 02_my_sample   # projects/02_my_sample に切替
 切替結果は `.active-project` ファイル (.gitignore 済) に書かれ、以降の
 `just get` / `just run` などはそのプロジェクトに対して実行される。
 
-優先順は **`PROJECT` env > `.active-project` > デフォルト (`projects/01_counter_freezed`)**。
+優先順は **`PROJECT` env > `.active-project` > デフォルト (`projects/counter_freezed`)**。
 一時的に別プロジェクトを叩きたいときは `PROJECT=projects/foo just run` のように
 env で上書きする。
 
@@ -68,7 +68,7 @@ just project set 02_my_sample
 just init platforms
 
 # 3. 必要なら pubspec.yaml に Freezed などを追加
-#    → projects/01_counter_freezed/pubspec.yaml を参考にコピー
+#    → projects/counter_freezed/pubspec.yaml を参考にコピー
 
 # 4. 依存取得 → 起動
 just get

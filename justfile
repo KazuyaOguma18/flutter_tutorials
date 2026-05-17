@@ -2,7 +2,7 @@ set shell := ["bash", "-cu"]
 
 # 対象プロジェクト。優先順: PROJECT env > .active-project ファイル > デフォルト
 # 切替は `just project set <name>`、確認は `just project [get]`
-export PROJECT := env_var_or_default("PROJECT", `cat .active-project 2>/dev/null || echo projects/01_counter_freezed`)
+export PROJECT := absolute_path(env_var_or_default("PROJECT", `cat .active-project 2>/dev/null || echo projects/counter_freezed`))
 
 mod gen 'just/gen.just'
 mod build 'just/build.just'
@@ -17,6 +17,10 @@ alias f := fmt
 alias c := clean
 alias r := run
 alias s := serve
+
+# `just b` / `just b linux` などモジュールに引数も渡せる
+b *args:
+    @just build {{args}}
 
 # 利用可能なタスク一覧
 default:
